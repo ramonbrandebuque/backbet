@@ -9,7 +9,7 @@ import { useAppContext } from '../context/AppContext';
 import { formatNumberBR } from '../utils/format';
 
 export default function VipDashboard() {
-  const { user, logout, bets, updateUser } = useAppContext();
+  const { user, logout, bets, multiBets, updateUser } = useAppContext();
   const navigate = useNavigate();
   const [selectedStrategy, setSelectedStrategy] = useState<Strategy | 'All'>('All');
   const [dateFilter, setDateFilter] = useState<'all' | 'thisMonth' | 'thisYear' | 'custom'>('all');
@@ -37,6 +37,24 @@ export default function VipDashboard() {
     'Abaixo de 4,5 Gols',
     'Vitoria Casa'
   ];
+
+  const allBets = useMemo(() => {
+    const mappedMultiBets = multiBets.map(mb => ({
+      id: mb.id,
+      date: mb.date,
+      match: mb.games.map(g => g.match).join(' + '),
+      strategy: mb.strategy,
+      odd: mb.finalOdd,
+      result: mb.result,
+      isMulti: true
+    }));
+    
+    return [...bets, ...mappedMultiBets].sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      return dateB - dateA;
+    });
+  }, [bets, multiBets]);
 
   const handleLogout = () => {
     navigate('/');
@@ -98,11 +116,11 @@ export default function VipDashboard() {
   };
 
   const pendingBets = useMemo(() => {
-    return bets.filter(bet => bet.result === 'pending');
-  }, [bets]);
+    return allBets.filter(bet => bet.result === 'pending');
+  }, [allBets]);
 
   const filteredBets = useMemo(() => {
-    return bets.filter(bet => {
+    return allBets.filter(bet => {
       // Strategy Filter
       if (selectedStrategy !== 'All' && bet.strategy !== selectedStrategy) {
         return false;
@@ -123,7 +141,7 @@ export default function VipDashboard() {
 
       return true;
     });
-  }, [bets, selectedStrategy, dateFilter, customStartDate, customEndDate]);
+  }, [allBets, selectedStrategy, dateFilter, customStartDate, customEndDate]);
 
   const stats = useMemo(() => {
     let totalWins = 0;
@@ -245,7 +263,7 @@ export default function VipDashboard() {
         {/* Today's Resolved Bets */}
         {(() => {
           const todayStr = format(new Date(), 'yyyy-MM-dd');
-          const todaysResolvedBets = bets.filter(b => b.date === todayStr && b.result !== 'pending');
+          const todaysResolvedBets = allBets.filter(b => b.date === todayStr && b.result !== 'pending');
           
           if (todaysResolvedBets.length === 0) return null;
 

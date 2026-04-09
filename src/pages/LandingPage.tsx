@@ -77,9 +77,27 @@ const faqs = [
 ];
 
 export default function LandingPage() {
-  const { bets } = useAppContext();
+  const { bets, multiBets } = useAppContext();
   const [unitValue, setUnitValue] = useState<number>(10);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+
+  const allBets = useMemo(() => {
+    const mappedMultiBets = multiBets.map(mb => ({
+      id: mb.id,
+      date: mb.date,
+      match: mb.games.map(g => g.match).join(' + '),
+      strategy: mb.strategy,
+      odd: mb.finalOdd,
+      result: mb.result,
+      isMulti: true
+    }));
+    
+    return [...bets, ...mappedMultiBets].sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+      return dateB - dateA;
+    });
+  }, [bets, multiBets]);
 
   const stats = useMemo(() => {
     let totalWins = 0;
@@ -88,7 +106,7 @@ export default function LandingPage() {
     
     const strategyMap = new Map<string, StrategyStats & { totalOdds: number }>();
 
-    bets.forEach(bet => {
+    allBets.forEach(bet => {
       if (bet.result === 'pending') return;
 
       if (bet.result === 'win') totalWins++;
@@ -122,7 +140,7 @@ export default function LandingPage() {
     const strategyStats = Array.from(strategyMap.values()).map(({ totalOdds, ...rest }) => rest).sort((a, b) => b.profit - a.profit);
     
     // Calculate cumulative profit for chart
-    const resolvedBets = [...bets].filter(b => b.result !== 'pending').reverse();
+    const resolvedBets = [...allBets].filter(b => b.result !== 'pending').reverse();
     let cumulative = 0;
     const chartData = resolvedBets.map((bet, index) => {
       cumulative += calculateProfit(bet);
@@ -144,7 +162,7 @@ export default function LandingPage() {
       strategyStats,
       chartData: sampledChartData
     };
-  }, [bets]);
+  }, [allBets]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-emerald-500/30">

@@ -1,4 +1,4 @@
-import { Bet, Strategy, User } from '../types';
+import { Bet, Strategy, User, MultiBet } from '../types';
 
 export const strategies: Strategy[] = [
   'Mais de 0,5 Gols Casa',
@@ -19,10 +19,13 @@ export const initialMockUsers: User[] = [
   { id: '1', username: 'admin', password: 'A*b1590250', role: 'admin', status: 'active' }
 ];
 
-export const calculateProfit = (bet: Bet): number => {
+export const calculateProfit = (bet: Bet | MultiBet): number => {
   if (bet.result === 'pending' || bet.result === 'void') return 0;
+  
+  const odd = 'finalOdd' in bet ? bet.finalOdd : bet.odd;
+  
   if (bet.result === 'win') {
-    return bet.odd - 1;
+    return odd - 1;
   } else {
     return -1;
   }
