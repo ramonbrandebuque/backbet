@@ -281,15 +281,15 @@ export default function VipDashboard() {
                 </h2>
                 <div className="flex items-center gap-4 text-sm font-medium bg-slate-900 border border-slate-800 rounded-xl px-4 py-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-emerald-400">{todayWins}W</span>
+                    <span className="text-emerald-400">{todayWins} Greens</span>
                     <span className="text-slate-600">-</span>
-                    <span className="text-red-400">{todayLosses}L</span>
+                    <span className="text-red-400">{todayLosses} Reds</span>
                   </div>
                   <div className="w-px h-4 bg-slate-800"></div>
-                  <div className="text-blue-400">{todayWinrate.toFixed(1)}% WR</div>
+                  <div className="text-blue-400">{todayWinrate.toFixed(1)}% de Acerto</div>
                   <div className="w-px h-4 bg-slate-800"></div>
                   <div className={`${todayProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {todayProfit >= 0 ? '+' : ''}{formatNumberBR(todayProfit, 2)} U
+                    {todayProfit >= 0 ? '+' : ''}{formatNumberBR(todayProfit, 2)} Unidades
                   </div>
                 </div>
               </div>
