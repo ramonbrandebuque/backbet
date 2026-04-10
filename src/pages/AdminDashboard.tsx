@@ -42,18 +42,28 @@ export default function AdminDashboard() {
 
   // Filter State
   const [betFilter, setBetFilter] = useState<'all' | 'pending' | 'resolved'>('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const filteredAdminBets = bets.filter(b => {
-    if (betFilter === 'pending') return b.result === 'pending';
-    if (betFilter === 'resolved') return b.result !== 'pending';
+    if (betFilter === 'pending' && b.result !== 'pending') return false;
+    if (betFilter === 'resolved' && b.result === 'pending') return false;
+    
+    if (startDate && b.date < startDate) return false;
+    if (endDate && b.date > endDate) return false;
+    
     return true;
-  });
+  }).slice(0, 100);
 
   const filteredAdminMultiBets = multiBets.filter(b => {
-    if (betFilter === 'pending') return b.result === 'pending';
-    if (betFilter === 'resolved') return b.result !== 'pending';
+    if (betFilter === 'pending' && b.result !== 'pending') return false;
+    if (betFilter === 'resolved' && b.result === 'pending') return false;
+    
+    if (startDate && b.date < startDate) return false;
+    if (endDate && b.date > endDate) return false;
+    
     return true;
-  });
+  }).slice(0, 100);
 
   const handleLogout = () => {
     navigate('/');
@@ -402,25 +412,56 @@ export default function AdminDashboard() {
             </div>
 
             <div className="lg:col-span-2 space-y-8">
-              <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1 mb-6 w-fit">
-                <button 
-                  onClick={() => setBetFilter('all')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${betFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
-                >
-                  Todas
-                </button>
-                <button 
-                  onClick={() => setBetFilter('pending')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${betFilter === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-slate-200'}`}
-                >
-                  Pendentes
-                </button>
-                <button 
-                  onClick={() => setBetFilter('resolved')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${betFilter === 'resolved' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:text-slate-200'}`}
-                >
-                  Resolvidas
-                </button>
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+                <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1 w-fit">
+                  <button 
+                    onClick={() => setBetFilter('all')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${betFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                  >
+                    Todas
+                  </button>
+                  <button 
+                    onClick={() => setBetFilter('pending')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${betFilter === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-slate-200'}`}
+                  >
+                    Pendentes
+                  </button>
+                  <button 
+                    onClick={() => setBetFilter('resolved')}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${betFilter === 'resolved' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:text-slate-200'}`}
+                  >
+                    Resolvidas
+                  </button>
+                </div>
+                
+                <div className="flex gap-2 items-center">
+                  <div className="flex flex-col">
+                    <label className="text-xs text-slate-500 mb-1">Data Inicial</label>
+                    <input 
+                      type="date" 
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-300 focus:border-emerald-500 outline-none"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="text-xs text-slate-500 mb-1">Data Final</label>
+                    <input 
+                      type="date" 
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-300 focus:border-emerald-500 outline-none"
+                    />
+                  </div>
+                  {(startDate || endDate) && (
+                    <button 
+                      onClick={() => { setStartDate(''); setEndDate(''); }}
+                      className="mt-5 text-xs text-slate-400 hover:text-slate-200 underline"
+                    >
+                      Limpar
+                    </button>
+                  )}
+                </div>
               </div>
 
               <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
