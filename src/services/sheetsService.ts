@@ -113,8 +113,8 @@ export const fetchSheetData = async (sheetId: string) => {
       date: parseBrazilianDate(getProp(row, 'date')), // parseBrazilianDate agora só serve de fallback se for texto
       match: getProp(row, 'match'),
       strategy: getProp(row, 'strategy'),
-      odd: parseFloat(getProp(row, 'odd')?.replace(',', '.') || '0'),
-      result: getProp(row, 'result') as 'win' | 'lose' | 'pending' | 'void'
+      odd: parseFloat(String(getProp(row, 'odd') || '0').replace(',', '.')),
+      result: typeof getProp(row, 'result') === 'string' ? getProp(row, 'result').trim().toLowerCase() as 'win' | 'lose' | 'pending' | 'void' : (getProp(row, 'result') || 'pending')
     })).filter((b: any) => b.id && b.match); // Filtra linhas vazias
 
     const multiBets: import('../types').MultiBet[] = [];
@@ -126,7 +126,8 @@ export const fetchSheetData = async (sheetId: string) => {
       const rowStrategy = getProp(row, 'strategy');
       const rowMatch = getProp(row, 'match');
       const rowOdd = getProp(row, 'odd');
-      const rowResult = getProp(row, 'result');
+      const rawResult = getProp(row, 'result');
+      const rowResult = typeof rawResult === 'string' ? rawResult.trim().toLowerCase() : rawResult;
 
       // Se a linha tem ID (ou data/estratégia), assumimos que é o começo de uma nova múltipla
       // Células mescladas no Google Sheets retornam valor apenas na primeira linha
@@ -146,9 +147,11 @@ export const fetchSheetData = async (sheetId: string) => {
       
       // Adiciona o jogo atual à múltipla corrente
       if (currentMultiBet && rowMatch) {
-        const odd = parseFloat(rowOdd?.replace(',', '.') || '0');
+        const odd = parseFloat(String(rowOdd || '0').replace(',', '.'));
         currentMultiBet.games.push({ match: rowMatch, odd });
-        currentMultiBet.finalOdd *= odd;
+        if (odd > 0) {
+          currentMultiBet.finalOdd *= odd;
+        }
         
         // Se o resultado estiver preenchido em uma linha subsequente (ex: última linha da mesclagem)
         if (rowResult && rowResult !== 'pending') {
