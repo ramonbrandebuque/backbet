@@ -47,7 +47,7 @@ const fetchGvizJson = async (url: string) => {
   if (!match || !match[1]) throw new Error('Formato de resposta inválido do Google Sheets');
   
   const data = JSON.parse(match[1]);
-  const headers = data.table.cols.map((c: any) => c.label);
+  const headers = data.table.cols.map((c: any) => c.label?.trim());
   
   const rows = data.table.rows.map((r: any) => {
     const rowObj: any = {};
@@ -80,6 +80,11 @@ const fetchGvizJson = async (url: string) => {
   return rows;
 };
 
+const getProp = (obj: any, prop: string) => {
+  const key = Object.keys(obj).find(k => k.toLowerCase() === prop.toLowerCase());
+  return key ? obj[key] : undefined;
+};
+
 export const fetchSheetData = async (sheetId: string) => {
   // Usamos out:json para ter acesso aos valores brutos (incluindo o ano completo das datas)
   const usersUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=Usuários`;
@@ -94,49 +99,61 @@ export const fetchSheetData = async (sheetId: string) => {
     ]);
 
     const users: User[] = parsedUsers.map((row: any) => ({
-      id: row.id,
-      username: row.username?.trim(),
-      displayName: row.displayName?.trim(),
-      password: row.password?.trim(),
-      role: row.role?.trim().toLowerCase() as 'admin' | 'vip',
-      status: row.status?.trim().toLowerCase() as 'active' | 'suspended',
-      vipDaysRemaining: row.vipDaysRemaining ? parseInt(row.vipDaysRemaining, 10) : undefined
+      id: getProp(row, 'id'),
+      username: getProp(row, 'username')?.trim(),
+      displayName: getProp(row, 'displayName')?.trim(),
+      password: getProp(row, 'password')?.trim(),
+      role: getProp(row, 'role')?.trim().toLowerCase() as 'admin' | 'vip',
+      status: getProp(row, 'status')?.trim().toLowerCase() as 'active' | 'suspended',
+      vipDaysRemaining: getProp(row, 'vipDaysRemaining') ? parseInt(getProp(row, 'vipDaysRemaining'), 10) : undefined
     })).filter((u: any) => u.id && u.username); // Filtra linhas vazias
 
     const bets: Bet[] = parsedBets.map((row: any) => ({
-      id: row.id,
-      date: parseBrazilianDate(row.date), // parseBrazilianDate agora só serve de fallback se for texto
-      match: row.match,
-      strategy: row.strategy,
-      odd: parseFloat(row.odd?.replace(',', '.') || '0'),
-      result: row.result as 'win' | 'lose' | 'pending' | 'void'
+      id: getProp(row, 'id'),
+      date: parseBrazilianDate(getProp(row, 'date')), // parseBrazilianDate agora só serve de fallback se for texto
+      match: getProp(row, 'match'),
+      strategy: getProp(row, 'strategy'),
+      odd: parseFloat(getProp(row, 'odd')?.replace(',', '.') || '0'),
+      result: getProp(row, 'result') as 'win' | 'lose' | 'pending' | 'void'
     })).filter((b: any) => b.id && b.match); // Filtra linhas vazias
 
     const multiBets: import('../types').MultiBet[] = [];
     let currentMultiBet: import('../types').MultiBet | null = null;
 
     parsedMultiBets.forEach((row: any) => {
+      const rowId = getProp(row, 'id');
+      const rowDate = getProp(row, 'date');
+      const rowStrategy = getProp(row, 'strategy');
+      const rowMatch = getProp(row, 'match');
+      const rowOdd = getProp(row, 'odd');
+      const rowResult = getProp(row, 'result');
+
       // Se a linha tem ID (ou data/estratégia), assumimos que é o começo de uma nova múltipla
       // Células mescladas no Google Sheets retornam valor apenas na primeira linha
-      if (row.id || (row.date && row.strategy)) {
+      if (rowId || (rowDate && rowStrategy)) {
         if (currentMultiBet) {
           multiBets.push(currentMultiBet);
         }
         currentMultiBet = {
-          id: row.id || `multi-${Date.now()}-${Math.random()}`, // Fallback se não tiver ID
-          date: parseBrazilianDate(row.date),
-          strategy: row.strategy,
+          id: rowId || `multi-${Date.now()}-${Math.random()}`, // Fallback se não tiver ID
+          date: parseBrazilianDate(rowDate),
+          strategy: rowStrategy,
           games: [],
           finalOdd: 1,
-          result: (row.result as 'win' | 'lose' | 'pending' | 'void') || 'pending'
+          result: (rowResult as 'win' | 'lose' | 'pending' | 'void') || 'pending'
         };
       }
       
       // Adiciona o jogo atual à múltipla corrente
-      if (currentMultiBet && row.match) {
-        const odd = parseFloat(row.odd?.replace(',', '.') || '0');
-        currentMultiBet.games.push({ match: row.match, odd });
+      if (currentMultiBet && rowMatch) {
+        const odd = parseFloat(rowOdd?.replace(',', '.') || '0');
+        currentMultiBet.games.push({ match: rowMatch, odd });
         currentMultiBet.finalOdd *= odd;
+        
+        // Se o resultado estiver preenchido em uma linha subsequente (ex: última linha da mesclagem)
+        if (rowResult && rowResult !== 'pending') {
+          currentMultiBet.result = rowResult as 'win' | 'lose' | 'pending' | 'void';
+        }
       }
     });
 

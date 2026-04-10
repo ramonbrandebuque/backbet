@@ -40,6 +40,21 @@ export default function AdminDashboard() {
   const [newRole, setNewRole] = useState<Role>('vip');
   const [newVipDays, setNewVipDays] = useState('30');
 
+  // Filter State
+  const [betFilter, setBetFilter] = useState<'all' | 'pending' | 'resolved'>('all');
+
+  const filteredAdminBets = bets.filter(b => {
+    if (betFilter === 'pending') return b.result === 'pending';
+    if (betFilter === 'resolved') return b.result !== 'pending';
+    return true;
+  });
+
+  const filteredAdminMultiBets = multiBets.filter(b => {
+    if (betFilter === 'pending') return b.result === 'pending';
+    if (betFilter === 'resolved') return b.result !== 'pending';
+    return true;
+  });
+
   const handleLogout = () => {
     navigate('/');
     // Use a small timeout to ensure navigation happens before context state updates and triggers ProtectedRoute redirect
@@ -387,9 +402,30 @@ export default function AdminDashboard() {
             </div>
 
             <div className="lg:col-span-2 space-y-8">
+              <div className="flex bg-slate-900 border border-slate-800 rounded-xl p-1 mb-6 w-fit">
+                <button 
+                  onClick={() => setBetFilter('all')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${betFilter === 'all' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  Todas
+                </button>
+                <button 
+                  onClick={() => setBetFilter('pending')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${betFilter === 'pending' ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  Pendentes
+                </button>
+                <button 
+                  onClick={() => setBetFilter('resolved')}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${betFilter === 'resolved' ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 hover:text-slate-200'}`}
+                >
+                  Resolvidas
+                </button>
+              </div>
+
               <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
                 <div className="p-6 border-b border-slate-800">
-                  <h3 className="text-lg font-bold">Últimas Apostas Simples</h3>
+                  <h3 className="text-lg font-bold">Apostas Simples</h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
@@ -403,7 +439,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
-                      {bets.slice(0, 10).map(bet => (
+                      {filteredAdminBets.map(bet => (
                         <tr key={bet.id}>
                           <td className="px-6 py-4">{bet.date}</td>
                           <td className="px-6 py-4">{bet.match}</td>
@@ -435,7 +471,7 @@ export default function AdminDashboard() {
 
               <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
                 <div className="p-6 border-b border-slate-800">
-                  <h3 className="text-lg font-bold">Últimas Apostas Múltiplas</h3>
+                  <h3 className="text-lg font-bold">Apostas Múltiplas</h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm">
@@ -449,7 +485,7 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
-                      {multiBets.slice(0, 10).map(bet => (
+                      {filteredAdminMultiBets.map(bet => (
                         <tr key={bet.id}>
                           <td className="px-6 py-4">{bet.date}</td>
                           <td className="px-6 py-4">
