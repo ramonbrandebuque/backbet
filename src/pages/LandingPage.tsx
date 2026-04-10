@@ -233,7 +233,7 @@ export default function LandingPage() {
             <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-b from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <TrendingUp className="w-10 h-10 text-emerald-500 mx-auto mb-4" />
-              <div className="text-4xl font-bold mb-2 text-emerald-400">+{formatNumberBR(stats.totalProfit, 3)} U</div>
+              <div className="text-4xl font-bold mb-2 text-emerald-400">+{formatNumberBR(stats.totalProfit, 2)} U</div>
               <div className="text-slate-400 font-medium">Lucro Acumulado (Unidades)</div>
             </div>
             <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl text-center relative overflow-hidden group">
@@ -292,7 +292,7 @@ export default function LandingPage() {
                     </div>
                     <div className="mt-4 pt-4 border-t border-slate-800 flex justify-between text-sm">
                       <span className="text-slate-500">Unidades Totais:</span>
-                      <span className="font-medium text-slate-300">+{formatNumberBR(stats.totalProfit, 3)} U</span>
+                      <span className="font-medium text-slate-300">+{formatNumberBR(stats.totalProfit, 2)} U</span>
                     </div>
                   </div>
                 </div>
@@ -315,7 +315,7 @@ export default function LandingPage() {
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
                     itemStyle={{ color: '#10b981' }}
-                    formatter={(value: number) => [`${formatNumberBR(value, 3)} U`, 'Lucro']}
+                    formatter={(value: number) => [`${formatNumberBR(value, 2)} U`, 'Lucro']}
                     labelFormatter={() => ''}
                   />
                   <Line 
@@ -358,7 +358,7 @@ export default function LandingPage() {
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-slate-400 text-sm">Lucro</span>
                   <span className={`font-semibold ${stat.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {stat.profit >= 0 ? '+' : ''}{formatNumberBR(stat.profit, 3)} U
+                    {stat.profit >= 0 ? '+' : ''}{formatNumberBR(stat.profit, 2)} U
                   </span>
                 </div>
                 <div className="flex justify-between items-center">

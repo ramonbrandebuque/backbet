@@ -298,7 +298,7 @@ export default function VipDashboard() {
                             bet.result === 'void' ? 'text-slate-400' :
                             profit >= 0 ? 'text-emerald-400' : 'text-red-400'
                           }`}>
-                            {bet.result === 'void' ? '0,000 U' : `${profit >= 0 ? '+' : ''}${formatNumberBR(profit, 3)} U`}
+                            {bet.result === 'void' ? '0,00 U' : `${profit >= 0 ? '+' : ''}${formatNumberBR(profit, 2)} U`}
                           </span>
                         </div>
                       </div>
@@ -380,7 +380,7 @@ export default function VipDashboard() {
             <div>
               <div className="text-slate-400 text-sm font-medium mb-1">Lucro Total</div>
               <div className={`text-2xl font-bold ${stats.totalProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                {stats.totalProfit >= 0 ? '+' : ''}{formatNumberBR(stats.totalProfit, 3)} U
+                {stats.totalProfit >= 0 ? '+' : ''}{formatNumberBR(stats.totalProfit, 2)} U
               </div>
             </div>
           </div>
@@ -429,7 +429,7 @@ export default function VipDashboard() {
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
                     itemStyle={{ color: '#10b981' }}
-                    formatter={(value: number) => [`${formatNumberBR(value, 3)} U`, 'Lucro']}
+                    formatter={(value: number) => [`${formatNumberBR(value, 2)} U`, 'Lucro']}
                     labelStyle={{ color: '#94a3b8' }}
                   />
                   <Line 
@@ -462,7 +462,7 @@ export default function VipDashboard() {
                   />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
-                    formatter={(value: number) => [`${formatNumberBR(value, 3)} U`, 'Lucro']}
+                    formatter={(value: number) => [`${formatNumberBR(value, 2)} U`, 'Lucro']}
                     cursor={{fill: '#1e293b'}}
                   />
                   <Bar dataKey="profit" radius={[0, 4, 4, 0]}>
@@ -522,7 +522,7 @@ export default function VipDashboard() {
                         bet.result === 'void' ? 'text-slate-400' :
                         profit >= 0 ? 'text-emerald-400' : 'text-red-400'
                       }`}>
-                        {bet.result === 'pending' ? '-' : bet.result === 'void' ? '0,000 U' : `${profit >= 0 ? '+' : ''}${formatNumberBR(profit, 3)} U`}
+                        {bet.result === 'pending' ? '-' : bet.result === 'void' ? '0,00 U' : `${profit >= 0 ? '+' : ''}${formatNumberBR(profit, 2)} U`}
                       </td>
                     </tr>
                   );
