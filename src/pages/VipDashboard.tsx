@@ -267,11 +267,32 @@ export default function VipDashboard() {
           
           if (todaysResolvedBets.length === 0) return null;
 
+          const todayWins = todaysResolvedBets.filter(b => b.result === 'win').length;
+          const todayLosses = todaysResolvedBets.filter(b => b.result === 'lose').length;
+          const todayTotal = todayWins + todayLosses;
+          const todayWinrate = todayTotal > 0 ? (todayWins / todayTotal) * 100 : 0;
+          const todayProfit = todaysResolvedBets.reduce((acc, bet) => acc + calculateProfit(bet), 0);
+
           return (
             <div className="mb-8">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-emerald-400">
-                <CheckCircle2 className="w-6 h-6" /> Resultados de Hoje
-              </h2>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+                <h2 className="text-xl font-bold flex items-center gap-2 text-emerald-400">
+                  <CheckCircle2 className="w-6 h-6" /> Resultados de Hoje
+                </h2>
+                <div className="flex items-center gap-4 text-sm font-medium bg-slate-900 border border-slate-800 rounded-xl px-4 py-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-emerald-400">{todayWins}W</span>
+                    <span className="text-slate-600">-</span>
+                    <span className="text-red-400">{todayLosses}L</span>
+                  </div>
+                  <div className="w-px h-4 bg-slate-800"></div>
+                  <div className="text-blue-400">{todayWinrate.toFixed(1)}% WR</div>
+                  <div className="w-px h-4 bg-slate-800"></div>
+                  <div className={`${todayProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {todayProfit >= 0 ? '+' : ''}{formatNumberBR(todayProfit, 2)} U
+                  </div>
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {todaysResolvedBets.map(bet => {
                   const profit = calculateProfit(bet);

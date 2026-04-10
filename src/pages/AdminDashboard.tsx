@@ -4,7 +4,7 @@ import { useAppContext } from '../context/AppContext';
 import { LogOut, Plus, Users, Target, Trash2, Ban, CheckCircle2 } from 'lucide-react';
 import { Strategy, Role } from '../types';
 import { strategies } from '../data/mockData';
-import { formatNumberBR } from '../utils/format';
+import { formatNumberBR, formatDateBR } from '../utils/format';
 
 export default function AdminDashboard() {
   const { user, logout, bets, addBet, updateBet, multiBets, addMultiBet, updateMultiBet, users, addUser, updateUserVipDays, deleteUser, toggleUserStatus } = useAppContext();
@@ -482,7 +482,7 @@ export default function AdminDashboard() {
                     <tbody className="divide-y divide-slate-800/50">
                       {filteredAdminBets.map(bet => (
                         <tr key={bet.id}>
-                          <td className="px-6 py-4">{bet.date}</td>
+                          <td className="px-6 py-4">{formatDateBR(bet.date)}</td>
                           <td className="px-6 py-4">{bet.match}</td>
                           <td className="px-6 py-4">{bet.strategy}</td>
                           <td className="px-6 py-4">{formatNumberBR(bet.odd, 2)}</td>
@@ -528,7 +528,7 @@ export default function AdminDashboard() {
                     <tbody className="divide-y divide-slate-800/50">
                       {filteredAdminMultiBets.map(bet => (
                         <tr key={bet.id}>
-                          <td className="px-6 py-4">{bet.date}</td>
+                          <td className="px-6 py-4">{formatDateBR(bet.date)}</td>
                           <td className="px-6 py-4">
                             <div className="flex flex-col gap-1">
                               {bet.games.map((g, i) => (
