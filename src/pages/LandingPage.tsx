@@ -1,11 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, ShieldCheck, Target, BarChart3, ArrowRight, CheckCircle2, Calculator, Plus, Minus } from 'lucide-react';
+import { TrendingUp, ShieldCheck, Target, BarChart3, ArrowRight, CheckCircle2, Calculator, Plus, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { calculateProfit } from '../data/mockData';
 import { StrategyStats } from '../types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { useAppContext } from '../context/AppContext';
 import { formatNumberBR } from '../utils/format';
+import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const faqs = [
   {
@@ -80,6 +82,8 @@ export default function LandingPage() {
   const { bets, multiBets } = useAppContext();
   const [unitValue, setUnitValue] = useState<number>(10);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const [chartFilter, setChartFilter] = useState<'12m' | 'all'>('all');
 
   const allBets = useMemo(() => {
     const mappedMultiBets = multiBets.map(mb => ({
@@ -140,29 +144,108 @@ export default function LandingPage() {
     const strategyStats = Array.from(strategyMap.values()).map(({ totalOdds, ...rest }) => rest).sort((a, b) => b.profit - a.profit);
     
     // Calculate cumulative profit for chart
-    const resolvedBets = [...allBets].filter(b => b.result !== 'pending').reverse();
+    const resolvedBets = [...allBets].filter(b => b.result !== 'pending' && b.date).reverse();
     let cumulative = 0;
-    const chartData = resolvedBets.map((bet, index) => {
+    
+    const now = new Date();
+    const twelveMonthsAgo = subMonths(now, 12);
+
+    const fullChartData = resolvedBets.map((bet, index) => {
       cumulative += calculateProfit(bet);
+      const betDate = parseISO(bet.date);
       return {
         index,
+        date: betDate,
+        formattedDate: format(betDate, "MMM ''yy", { locale: ptBR }),
+        tooltipDate: format(betDate, "MMM yyyy", { locale: ptBR }),
         profit: cumulative
       };
     });
 
+    const filteredChartData = chartFilter === '12m' 
+      ? fullChartData.filter(d => d.date >= twelveMonthsAgo)
+      : fullChartData;
+
     // Sample data for a smoother chart on landing page
-    const sampledChartData = chartData.filter((_, i) => i % 10 === 0 || i === chartData.length - 1);
+    const sampledChartData = filteredChartData.filter((_, i) => i % 10 === 0 || i === filteredChartData.length - 1);
 
     const totalResolvedBets = totalWins + totalLosses;
+
+    // Previous Month Stats
+    const prevMonthDate = subMonths(now, 1);
+    const startOfPrevMonth = startOfMonth(prevMonthDate);
+    const endOfPrevMonth = endOfMonth(prevMonthDate);
+
+    let prevMonthWins = 0;
+    let prevMonthLosses = 0;
+    let prevMonthProfit = 0;
+    const prevMonthStrategyMap = new Map<string, StrategyStats & { totalOdds: number }>();
+
+    allBets.forEach(bet => {
+      if (bet.result === 'pending' || !bet.date) return;
+      
+      const betDate = parseISO(bet.date);
+      if (!isWithinInterval(betDate, { start: startOfPrevMonth, end: endOfPrevMonth })) return;
+
+      if (bet.result === 'win') prevMonthWins++;
+      else if (bet.result === 'lose') prevMonthLosses++;
+      
+      const profit = calculateProfit(bet);
+      prevMonthProfit += profit;
+
+      const current = prevMonthStrategyMap.get(bet.strategy) || {
+        strategy: bet.strategy,
+        totalBets: 0,
+        wins: 0,
+        losses: 0,
+        winRate: 0,
+        profit: 0,
+        averageOdd: 0,
+        totalOdds: 0
+      };
+
+      current.totalBets++;
+      if (bet.result === 'win') current.wins++;
+      else if (bet.result === 'lose') current.losses++;
+      current.profit += profit;
+      current.totalOdds += bet.odd;
+      current.winRate = current.totalBets > 0 ? (current.wins / current.totalBets) * 100 : 0;
+      current.averageOdd = current.totalOdds / current.totalBets;
+
+      prevMonthStrategyMap.set(bet.strategy, current);
+    });
+
+    const prevMonthTotalBets = prevMonthWins + prevMonthLosses;
+    const prevMonthWinRate = prevMonthTotalBets > 0 ? (prevMonthWins / prevMonthTotalBets) * 100 : 0;
+    const prevMonthStrategyStats = Array.from(prevMonthStrategyMap.values()).map(({ totalOdds, ...rest }) => rest).sort((a, b) => b.profit - a.profit);
 
     return {
       totalBets: totalResolvedBets,
       winRate: totalResolvedBets > 0 ? (totalWins / totalResolvedBets) * 100 : 0,
       totalProfit,
       strategyStats,
-      chartData: sampledChartData
+      chartData: sampledChartData,
+      prevMonth: {
+        name: format(prevMonthDate, 'MMMM yyyy', { locale: ptBR }),
+        totalBets: prevMonthTotalBets,
+        winRate: prevMonthWinRate,
+        profit: prevMonthProfit,
+        strategyStats: prevMonthStrategyStats
+      }
     };
-  }, [allBets]);
+  }, [allBets, chartFilter]);
+
+  useEffect(() => {
+    if (!stats.prevMonth || stats.prevMonth.totalBets === 0) return;
+
+    const interval = setInterval(() => {
+      setCarouselIndex(prev => 
+        prev === stats.prevMonth.strategyStats.length ? 0 : prev + 1
+      );
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [stats.prevMonth.strategyStats.length, stats.prevMonth.totalBets]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-emerald-500/30">
@@ -244,6 +327,90 @@ export default function LandingPage() {
             </div>
           </div>
 
+          {/* Previous Month Carousel */}
+          {stats.prevMonth.totalBets > 0 && (
+            <div className="max-w-3xl mx-auto mb-20">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-slate-200">Desempenho em {stats.prevMonth.name}</h3>
+                <p className="text-slate-400">Resultados do mês anterior</p>
+              </div>
+              
+              <div className="relative bg-slate-900 border border-slate-800 rounded-2xl p-8 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-50"></div>
+                
+                <div className="relative flex items-center justify-between">
+                  <button 
+                    onClick={() => setCarouselIndex(prev => prev === 0 ? stats.prevMonth.strategyStats.length : prev - 1)}
+                    className="p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors z-10"
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+                  
+                  <div className="flex-1 text-center px-4">
+                    {carouselIndex === 0 ? (
+                      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <h4 className="text-xl font-bold text-emerald-400 mb-6">Resultado Geral</h4>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <div className="text-sm text-slate-400 mb-1">Operações</div>
+                            <div className="text-2xl font-bold">{stats.prevMonth.totalBets}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-slate-400 mb-1">Winrate</div>
+                            <div className="text-2xl font-bold">{formatNumberBR(stats.prevMonth.winRate, 1)}%</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-slate-400 mb-1">Lucro</div>
+                            <div className={`text-2xl font-bold ${stats.prevMonth.profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {stats.prevMonth.profit >= 0 ? '+' : ''}{formatNumberBR(stats.prevMonth.profit, 2)} U
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <h4 className="text-xl font-bold text-emerald-400 mb-6">{stats.prevMonth.strategyStats[carouselIndex - 1].strategy}</h4>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <div className="text-sm text-slate-400 mb-1">Operações</div>
+                            <div className="text-2xl font-bold">{stats.prevMonth.strategyStats[carouselIndex - 1].totalBets}</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-slate-400 mb-1">Winrate</div>
+                            <div className="text-2xl font-bold">{formatNumberBR(stats.prevMonth.strategyStats[carouselIndex - 1].winRate, 1)}%</div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-slate-400 mb-1">Lucro</div>
+                            <div className={`text-2xl font-bold ${stats.prevMonth.strategyStats[carouselIndex - 1].profit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                              {stats.prevMonth.strategyStats[carouselIndex - 1].profit >= 0 ? '+' : ''}{formatNumberBR(stats.prevMonth.strategyStats[carouselIndex - 1].profit, 2)} U
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <button 
+                    onClick={() => setCarouselIndex(prev => prev === stats.prevMonth.strategyStats.length ? 0 : prev + 1)}
+                    className="p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors z-10"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                </div>
+                
+                <div className="flex justify-center gap-2 mt-8">
+                  {Array.from({ length: stats.prevMonth.strategyStats.length + 1 }).map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCarouselIndex(idx)}
+                      className={`w-2 h-2 rounded-full transition-all ${idx === carouselIndex ? 'bg-emerald-500 w-6' : 'bg-slate-700 hover:bg-slate-500'}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Profit Simulator */}
           <div className="max-w-4xl mx-auto mb-16">
             <div className="text-center mb-12">
@@ -302,29 +469,72 @@ export default function LandingPage() {
 
           {/* Growth Chart */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8">
-            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5 text-emerald-500" />
-              Crescimento da Banca (Unidades)
-            </h3>
-            <div className="h-[300px] w-full">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-emerald-500" />
+                Crescimento da Banca (Unidades)
+              </h3>
+              <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800">
+                <button
+                  onClick={() => setChartFilter('12m')}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    chartFilter === '12m' 
+                      ? 'bg-emerald-500 text-white' 
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  12m
+                </button>
+                <button
+                  onClick={() => setChartFilter('all')}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    chartFilter === 'all' 
+                      ? 'bg-emerald-500 text-white' 
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Todo o período
+                </button>
+              </div>
+            </div>
+            
+            <div className="h-[300px] w-full mt-8">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={stats.chartData}>
+                <LineChart data={stats.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                  <XAxis dataKey="index" hide />
-                  <YAxis stroke="#94a3b8" tickFormatter={(val) => formatNumberBR(val, 0)} />
+                  <XAxis 
+                    dataKey="formattedDate" 
+                    stroke="#64748b" 
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                    tickMargin={10}
+                    ticks={stats.chartData.length > 0 ? [stats.chartData[0].formattedDate, stats.chartData[stats.chartData.length - 1].formattedDate] : []}
+                  />
+                  <YAxis 
+                    stroke="#64748b" 
+                    tickFormatter={(val) => val > 0 ? `+${formatNumberBR(val, 0)}` : formatNumberBR(val, 0)}
+                    tick={{ fill: '#64748b', fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
-                    itemStyle={{ color: '#10b981' }}
-                    formatter={(value: number) => [`${formatNumberBR(value, 2)} U`, 'Lucro']}
-                    labelFormatter={() => ''}
+                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#10b981', borderRadius: '4px', padding: '8px 12px', color: '#0f172a' }}
+                    itemStyle={{ color: '#0f172a', fontWeight: 'bold' }}
+                    formatter={(value: number) => [value > 0 ? `+${formatNumberBR(value, 0)}` : formatNumberBR(value, 0), 'Lucro']}
+                    labelFormatter={(label, payload) => {
+                      if (payload && payload.length > 0) {
+                        return payload[0].payload.tooltipDate;
+                      }
+                      return label;
+                    }}
+                    cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '3 3' }}
                   />
                   <Line 
                     type="monotone" 
                     dataKey="profit" 
-                    stroke="#10b981" 
-                    strokeWidth={3}
+                    stroke="#4ade80" 
+                    strokeWidth={4}
                     dot={false}
-                    activeDot={{ r: 6, fill: '#10b981', stroke: '#022c22', strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: '#4ade80', stroke: '#ffffff', strokeWidth: 2 }}
                   />
                 </LineChart>
               </ResponsiveContainer>

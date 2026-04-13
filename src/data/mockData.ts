@@ -9,7 +9,7 @@ export const strategies: Strategy[] = [
   'Múltipla Mais de 1,5 Gols',
   'Mais de 2,5 Gols',
   'Múltipla Mais de 2,5 Gols',
-  'Abaixo de 4,5 Gols',
+  'Menos de 4,5 Gols',
   'Vitoria Casa'
 ];
 
