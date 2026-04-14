@@ -66,11 +66,7 @@ export default function AdminDashboard() {
   }).slice(0, 100);
 
   const handleLogout = () => {
-    navigate('/');
-    // Use a small timeout to ensure navigation happens before context state updates and triggers ProtectedRoute redirect
-    setTimeout(() => {
-      logout();
-    }, 0);
+    logout();
   };
 
   const handleStrategyToggle = (strategy: string) => {

@@ -15,11 +15,11 @@ const ProtectedRoute = ({ children, allowedRole }: { children: React.ReactNode, 
   const { user } = useAppContext();
   
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   if (user.role !== allowedRole && user.role !== 'admin') {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

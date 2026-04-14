@@ -57,11 +57,7 @@ export default function VipDashboard() {
   }, [bets, multiBets]);
 
   const handleLogout = () => {
-    navigate('/');
-    // Use a small timeout to ensure navigation happens before context state updates and triggers ProtectedRoute redirect
-    setTimeout(() => {
-      logout();
-    }, 0);
+    logout();
   };
 
   const handleSaveProfile = async () => {
