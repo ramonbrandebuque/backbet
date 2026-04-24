@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { TrendingUp, ShieldCheck, Target, BarChart3, ArrowRight, CheckCircle2, Calculator, Plus, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { calculateProfit } from '../data/mockData';
 import { StrategyStats } from '../types';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, Cell } from 'recharts';
 import { useAppContext } from '../context/AppContext';
 import { formatNumberBR } from '../utils/format';
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval, parseISO } from 'date-fns';
@@ -219,12 +219,50 @@ export default function LandingPage() {
     const prevMonthWinRate = prevMonthTotalBets > 0 ? (prevMonthWins / prevMonthTotalBets) * 100 : 0;
     const prevMonthStrategyStats = Array.from(prevMonthStrategyMap.values()).map(({ totalOdds, ...rest }) => rest).sort((a, b) => b.profit - a.profit);
 
+    // Yearly Monthly Stats
+    const yearlyStatsMap = new Map<string, { monthIndex: number; name: string; profit: number }[]>();
+    resolvedBets.forEach(bet => {
+      const betDate = parseISO(bet.date);
+      const year = format(betDate, 'yyyy');
+      const monthIndex = betDate.getMonth();
+      
+      if (!yearlyStatsMap.has(year)) {
+        const monthsData = Array.from({ length: 12 }, (_, i) => {
+          const mDate = new Date(parseInt(year), i, 1);
+          return {
+            monthIndex: i,
+            name: format(mDate, 'MMM', { locale: ptBR }).toUpperCase(),
+            profit: 0
+          };
+        });
+        yearlyStatsMap.set(year, monthsData);
+      }
+      
+      const profit = calculateProfit(bet);
+      const monthsData = yearlyStatsMap.get(year)!;
+      monthsData[monthIndex].profit += profit;
+    });
+
+    const yearlyStats = Array.from(yearlyStatsMap.entries())
+      .map(([year, months]) => {
+        const currentYear = format(now, 'yyyy');
+        if (year === currentYear) {
+          return {
+            year,
+            months: months.filter(m => m.monthIndex <= now.getMonth() || m.profit !== 0)
+          };
+        }
+        return { year, months };
+      })
+      .sort((a, b) => parseInt(b.year) - parseInt(a.year));
+
     return {
       totalBets: totalResolvedBets,
       winRate: totalResolvedBets > 0 ? (totalWins / totalResolvedBets) * 100 : 0,
       totalProfit,
       strategyStats,
       chartData: sampledChartData,
+      yearlyStats,
       prevMonth: {
         name: format(prevMonthDate, 'MMMM yyyy', { locale: ptBR }),
         totalBets: prevMonthTotalBets,
@@ -540,6 +578,57 @@ export default function LandingPage() {
               </ResponsiveContainer>
             </div>
           </div>
+
+          {/* Desempenho Mensal by Year */}
+          <div className="mt-12 space-y-8">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold mb-2">Desempenho Mensal</h3>
+              <p className="text-slate-400 text-sm">
+                * Resultado ilustrado mês a mês baseado na utilização de 1 unidade correspondendo a 1% da sua banca.
+              </p>
+            </div>
+            
+            {stats.yearlyStats.map((yearData) => (
+              <div key={yearData.year} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8">
+                <h4 className="text-xl font-bold mb-6 text-emerald-500 text-center sm:text-left">{yearData.year}</h4>
+                <div className="h-[250px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={yearData.months} margin={{ top: 20, right: 10, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                      <XAxis 
+                        dataKey="name" 
+                        stroke="#64748b" 
+                        tick={{ fill: '#64748b', fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickMargin={10}
+                      />
+                      <YAxis 
+                        stroke="#64748b" 
+                        tickFormatter={(val) => `${val > 0 ? '+' : ''}${formatNumberBR(val, 0)}%`}
+                        tick={{ fill: '#64748b', fontSize: 12 }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip 
+                        contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
+                        itemStyle={{ color: '#fff', fontWeight: 'bold' }}
+                        formatter={(value: number) => [`${value > 0 ? '+' : ''}${formatNumberBR(value, 2)}%`, 'Crescimento']}
+                        labelFormatter={(label) => `${label} ${yearData.year}`}
+                        cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
+                      />
+                      <Bar dataKey="profit" radius={[4, 4, 0, 0]}>
+                        {yearData.months.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.profit >= 0 ? '#10b981' : '#ef4444'} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            ))}
+          </div>
+
         </div>
       </section>
 
