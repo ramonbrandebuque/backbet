@@ -505,82 +505,8 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Growth Chart */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-              <h3 className="text-xl font-bold flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-emerald-500" />
-                Crescimento da Banca (Unidades)
-              </h3>
-              <div className="flex bg-slate-950 rounded-lg p-1 border border-slate-800">
-                <button
-                  onClick={() => setChartFilter('12m')}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    chartFilter === '12m' 
-                      ? 'bg-emerald-500 text-white' 
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  12m
-                </button>
-                <button
-                  onClick={() => setChartFilter('all')}
-                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                    chartFilter === 'all' 
-                      ? 'bg-emerald-500 text-white' 
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Todo o período
-                </button>
-              </div>
-            </div>
-            
-            <div className="h-[300px] w-full mt-8">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={stats.chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                  <XAxis 
-                    dataKey="formattedDate" 
-                    stroke="#64748b" 
-                    tick={{ fill: '#64748b', fontSize: 12 }}
-                    tickMargin={10}
-                    ticks={stats.chartData.length > 0 ? [stats.chartData[0].formattedDate, stats.chartData[stats.chartData.length - 1].formattedDate] : []}
-                  />
-                  <YAxis 
-                    stroke="#64748b" 
-                    tickFormatter={(val) => val > 0 ? `+${formatNumberBR(val, 0)}` : formatNumberBR(val, 0)}
-                    tick={{ fill: '#64748b', fontSize: 12 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#ffffff', borderColor: '#10b981', borderRadius: '4px', padding: '8px 12px', color: '#0f172a' }}
-                    itemStyle={{ color: '#0f172a', fontWeight: 'bold' }}
-                    formatter={(value: number) => [value > 0 ? `+${formatNumberBR(value, 0)}` : formatNumberBR(value, 0), 'Lucro']}
-                    labelFormatter={(label, payload) => {
-                      if (payload && payload.length > 0) {
-                        return payload[0].payload.tooltipDate;
-                      }
-                      return label;
-                    }}
-                    cursor={{ stroke: '#10b981', strokeWidth: 1, strokeDasharray: '3 3' }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="profit" 
-                    stroke="#4ade80" 
-                    strokeWidth={4}
-                    dot={false}
-                    activeDot={{ r: 6, fill: '#4ade80', stroke: '#ffffff', strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
           {/* Desempenho Mensal by Year */}
-          <div className="mt-12 space-y-8">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8">
             <div className="text-center mb-8">
               <h3 className="text-2xl font-bold mb-2">Desempenho Mensal</h3>
               <p className="text-slate-400 text-sm">
@@ -588,8 +514,9 @@ export default function LandingPage() {
               </p>
             </div>
             
+            <div className="space-y-8">
             {stats.yearlyStats.map((yearData) => (
-              <div key={yearData.year} className="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8">
+              <div key={yearData.year} className="bg-slate-950 border border-slate-800 rounded-xl p-6">
                 <h4 className="text-xl font-bold mb-6 text-emerald-500 text-center sm:text-left">{yearData.year}</h4>
                 <div className="h-[250px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
@@ -627,6 +554,7 @@ export default function LandingPage() {
                 </div>
               </div>
             ))}
+            </div>
           </div>
 
         </div>
