@@ -84,6 +84,7 @@ export default function LandingPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [chartFilter, setChartFilter] = useState<'12m' | 'all'>('all');
+  const [monthlyChartStrategyFilter, setMonthlyChartStrategyFilter] = useState<string>('all');
 
   const allBets = useMemo(() => {
     const mappedMultiBets = multiBets.map(mb => ({
@@ -222,6 +223,10 @@ export default function LandingPage() {
     // Yearly Monthly Stats
     const yearlyStatsMap = new Map<string, { monthIndex: number; name: string; profit: number }[]>();
     resolvedBets.forEach(bet => {
+      if (monthlyChartStrategyFilter !== 'all' && bet.strategy !== monthlyChartStrategyFilter) {
+        return;
+      }
+
       const betDate = parseISO(bet.date);
       const year = format(betDate, 'yyyy');
       const monthIndex = betDate.getMonth();
@@ -255,6 +260,8 @@ export default function LandingPage() {
         return { year, months };
       })
       .sort((a, b) => parseInt(b.year) - parseInt(a.year));
+      
+    const availableStrategies = Array.from(strategyMap.keys()).sort();
 
     return {
       totalBets: totalResolvedBets,
@@ -263,6 +270,7 @@ export default function LandingPage() {
       strategyStats,
       chartData: sampledChartData,
       yearlyStats,
+      availableStrategies,
       prevMonth: {
         name: format(prevMonthDate, 'MMMM yyyy', { locale: ptBR }),
         totalBets: prevMonthTotalBets,
@@ -271,7 +279,7 @@ export default function LandingPage() {
         strategyStats: prevMonthStrategyStats
       }
     };
-  }, [allBets, chartFilter]);
+  }, [allBets, chartFilter, monthlyChartStrategyFilter]);
 
   useEffect(() => {
     if (!stats.prevMonth || stats.prevMonth.totalBets === 0) return;
@@ -507,11 +515,26 @@ export default function LandingPage() {
 
           {/* Desempenho Mensal by Year */}
           <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 md:p-8">
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold mb-2">Desempenho Mensal</h3>
-              <p className="text-slate-400 text-sm">
-                * Resultado ilustrado mês a mês baseado na utilização de 1 unidade correspondendo a 1% da sua banca.
-              </p>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Desempenho Mensal</h3>
+                <p className="text-slate-400 text-sm">
+                  * Resultado ilustrado mês a mês baseado na utilização de 1 unidade correspondendo a 1% da sua banca.
+                </p>
+              </div>
+              
+              <div className="w-full md:w-auto shrink-0">
+                <select
+                  value={monthlyChartStrategyFilter}
+                  onChange={(e) => setMonthlyChartStrategyFilter(e.target.value)}
+                  className="w-full md:w-auto bg-slate-950 border border-slate-800 text-emerald-500 text-sm rounded-lg focus:ring-emerald-500 focus:border-emerald-500 block p-3 outline-none font-medium cursor-pointer"
+                >
+                  <option value="all">Geral (Todas as Estratégias)</option>
+                  {stats.availableStrategies.map(strategy => (
+                    <option key={strategy} value={strategy}>{strategy}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             
             <div className="space-y-8">
